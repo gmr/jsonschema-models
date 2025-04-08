@@ -17,6 +17,8 @@ class BaseModel(pydantic.BaseModel):
     def model_dump(self, **kwargs) -> dict:
         """Override model_dump to ensure aliases are used."""
         kwargs['by_alias'] = True
+        kwargs['exclude_none'] = True
+        kwargs['exclude_unset'] = True
         return super().model_dump(**kwargs)
 
     model_config = {'populate_by_name': True, 'use_enum_values': True}
