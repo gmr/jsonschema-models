@@ -185,6 +185,13 @@ class Schema(pydantic.BaseModel):
                 )
         return self
 
+    def model_dump(self, **kwargs) -> dict:
+        """Override model_dump to ensure aliases are used by default."""
+        # Always use by_alias=True unless explicitly set to False
+        if 'by_alias' not in kwargs:
+            kwargs['by_alias'] = True
+        return super().model_dump(**kwargs)
+
     def __init__(self, **data):
         """Initialize Schema with support for Python types."""
         # Check for Python type in the input data

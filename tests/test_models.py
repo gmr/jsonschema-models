@@ -401,3 +401,27 @@ class TestSchema(unittest.TestCase):
         schema_dict = schema.model_dump(by_alias=True)
         self.assertEqual(schema_dict['properties']['id']['format'], 'uuid')
         self.assertEqual(schema_dict['properties']['email']['format'], 'email')
+
+    def test_default_alias_serialization(self):
+        """Test that model_dump uses aliases by default."""
+        schema = jsm.Schema(
+            title='TestAlias',
+            type=jsm.SchemaType.STRING,
+            schema_='https://json-schema.org/draft/2020-12/schema',
+            id_='https://example.com/schemas/string',
+        )
+
+        # Call model_dump without explicitly setting by_alias
+        schema_dict = schema.model_dump()
+
+        # Verify that aliases are used by default
+        self.assertEqual(schema_dict['type'], 'string')
+        self.assertEqual(
+            schema_dict['$schema'],
+            'https://json-schema.org/draft/2020-12/schema',
+        )
+        self.assertEqual(
+            schema_dict['$id'], 'https://example.com/schemas/string'
+        )
+        # Ensure type_value is not present (it should be aliased to 'type')
+        self.assertNotIn('type_value', schema_dict)
