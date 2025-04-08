@@ -14,6 +14,16 @@ LOGGER = logging.getLogger(__name__)
 class BaseModel(pydantic.BaseModel):
     """Base model for JSON Schema Draft 2020-12 objects."""
 
+    model_config = {
+        'arbitrary_types_allowed': True,
+        'extra': 'allow',
+        'populate_by_name': True,
+        'serialize_by_alias': True,
+        'use_enum_values': True,
+        'validate_assignment': True,
+        'validate_by_alias': True,
+    }
+
     @staticmethod
     def _set_dump_kwargs(kwargs: dict) -> None:
         kwargs['by_alias'] = True
@@ -28,8 +38,6 @@ class BaseModel(pydantic.BaseModel):
         """Override model_dump to ensure aliases are used."""
         self._set_dump_kwargs(kwargs)
         return super().model_dump_json(**kwargs)
-
-    model_config = {'populate_by_name': True, 'use_enum_values': True}
 
 
 class SchemaType(str, enum.Enum):
