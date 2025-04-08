@@ -19,7 +19,7 @@ class BaseModel(pydantic.BaseModel):
         kwargs['by_alias'] = True
         return super().model_dump(**kwargs)
 
-    model_config = {'populate_by_name': True}
+    model_config = {'populate_by_name': True, 'use_enum_values': True}
 
 
 class SchemaType(str, enum.Enum):

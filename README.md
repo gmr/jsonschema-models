@@ -4,7 +4,7 @@ Pydantic models for representing JSON Schema objects.
 
 ## Features
 
-- Full support for JSON Schema Draft 2020-12 specification
+- Data model for JSON Schema Draft 2020-12 specification
 - Python 3.12+ type annotations
 - Pydantic-based models for validation and serialization
 - Specialized schema classes for different types (string, number, array, object, etc.)
@@ -19,6 +19,8 @@ Pydantic models for representing JSON Schema objects.
   - URI templates (uri-template)
   - JSON pointers (json-pointer, relative-json-pointer)
   - Regular expressions (regex)
+
+_Note: Currently this library does not enforce the many validation expectations that the 2020-12 specification calls for, it only allows you to implement the shape of the data._
 
 ## Installation
 
