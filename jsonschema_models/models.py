@@ -3,9 +3,23 @@
 from __future__ import annotations
 
 import enum
+import logging
 import typing
 
 import pydantic
+
+LOGGER = logging.getLogger(__name__)
+
+
+class BaseModel(pydantic.BaseModel):
+    """Base model for JSON Schema Draft 2020-12 objects."""
+
+    def model_dump(self, **kwargs) -> dict:
+        """Override model_dump to ensure aliases are used."""
+        kwargs['by_alias'] = True
+        return super().model_dump(**kwargs)
+
+    model_config = {'populate_by_name': True}
 
 
 class SchemaType(str, enum.Enum):
@@ -44,7 +58,7 @@ class FormatType(str, enum.Enum):
     REGEX = 'regex'
 
 
-class Schema(pydantic.BaseModel):
+class Schema(BaseModel):
     """JSON Schema Draft 2020-12 schema object."""
 
     schema_: str | None = pydantic.Field(None, alias='$schema')
@@ -59,14 +73,9 @@ class Schema(pydantic.BaseModel):
     comment: str | None = pydantic.Field(None, alias='$comment')
 
     # Type constraints
-    type_value: SchemaType | list[SchemaType] | None = pydantic.Field(
-        None, alias='type'
-    )
+    type: SchemaType | list[SchemaType] | None = None
     enum: list[typing.Any] | None = None
     const: typing.Any | None = None
-
-    # Store Python type as a model field
-    py_type: typing.Any = pydantic.Field(default=None, exclude=True)
 
     # Validation keywords for numeric instances
     multiple_of: float | None = pydantic.Field(
@@ -168,7 +177,10 @@ class Schema(pydantic.BaseModel):
     # Additional properties for extensibility
     extra: dict[str, typing.Any] | None = None
 
-    model_config = {'extra': 'allow', 'populate_by_name': True}
+    @pydantic.field_validator('type', mode='before')
+    @classmethod
+    def coerce_type(cls, value: typing.Any) -> SchemaType | list[SchemaType]:
+        return coerce_type(value)
 
     @pydantic.model_validator(mode='after')
     def validate_contains_constraints(self) -> Schema:
@@ -185,146 +197,52 @@ class Schema(pydantic.BaseModel):
                 )
         return self
 
-    def model_dump(self, **kwargs) -> dict:
-        """Override model_dump to ensure aliases are used by default."""
-        # Always use by_alias=True unless explicitly set to False
-        if 'by_alias' not in kwargs:
-            kwargs['by_alias'] = True
-        return super().model_dump(**kwargs)
-
-    def __init__(self, **data):
-        """Initialize Schema with support for Python types."""
-        # Check for Python type in the input data
-        python_type = data.get('type')
-
-        # Convert Python type to SchemaType
-        if python_type is not None:
-            # Store original Python type in the data to be used by the model
-            data['py_type'] = python_type
-
-            # Handle Python types that aren't SchemaType objects
-            if not isinstance(python_type, SchemaType | list):
-                # Convert to SchemaType for Pydantic validation
-                if python_type is str:
-                    data['type'] = SchemaType.STRING
-                elif python_type is int:
-                    data['type'] = SchemaType.INTEGER
-                elif python_type is float:
-                    data['type'] = SchemaType.NUMBER
-                elif python_type is bool:
-                    data['type'] = SchemaType.BOOLEAN
-                elif python_type in (list, tuple):
-                    data['type'] = SchemaType.ARRAY
-                elif python_type is dict:
-                    data['type'] = SchemaType.OBJECT
-                elif python_type is type(None):
-                    data['type'] = SchemaType.NULL
-            # Handle list of types
-            elif isinstance(python_type, list):
-                converted_types = []
-                for item in python_type:
-                    if isinstance(item, SchemaType):
-                        converted_types.append(item)
-                    elif item is str:
-                        converted_types.append(SchemaType.STRING)
-                    elif item is int:
-                        converted_types.append(SchemaType.INTEGER)
-                    elif item is float:
-                        converted_types.append(SchemaType.NUMBER)
-                    elif item is bool:
-                        converted_types.append(SchemaType.BOOLEAN)
-                    elif item in (list, tuple):
-                        converted_types.append(SchemaType.ARRAY)
-                    elif item is dict:
-                        converted_types.append(SchemaType.OBJECT)
-                    elif item is type(None):
-                        converted_types.append(SchemaType.NULL)
-                    else:
-                        # Leave as is for Pydantic to handle validation error
-                        pass
-                data['type'] = converted_types
-
-        super().__init__(**data)
-
-    @property
-    def type(self) -> SchemaType | list[SchemaType] | None:
-        """Get the type value."""
-        return self.type_value
-
 
 # Specialized schema types for specific use cases
 class ArraySchema(Schema):
     """Schema specifically for array types."""
 
-    def __init__(self, **data):
-        """Initialize with array type."""
-        super().__init__(**data)
-        self.type_value = SchemaType.ARRAY
+    type: SchemaType = SchemaType.ARRAY
 
 
 class BooleanSchema(Schema):
     """Schema specifically for boolean types."""
 
-    def __init__(self, **data):
-        """Initialize with boolean type."""
-        super().__init__(**data)
-        self.type_value = SchemaType.BOOLEAN
+    type: SchemaType = SchemaType.BOOLEAN
 
 
 class IntegerSchema(Schema):
     """Schema specifically for integer types."""
 
-    def __init__(self, **data):
-        """Initialize with integer type."""
-        super().__init__(**data)
-        self.type_value = SchemaType.INTEGER
+    type: SchemaType = SchemaType.INTEGER
 
 
 class NullSchema(Schema):
     """Schema specifically for null types."""
 
-    def __init__(self, **data):
-        """Initialize with null type."""
-        super().__init__(**data)
-        self.type_value = SchemaType.NULL
+    type: SchemaType = SchemaType.NULL
 
 
 class NumberSchema(Schema):
     """Schema specifically for number types."""
 
-    def __init__(self, **data):
-        """Initialize with number type."""
-        super().__init__(**data)
-        self.type_value = SchemaType.NUMBER
+    type: SchemaType = SchemaType.NUMBER
 
 
 class ObjectSchema(Schema):
     """Schema specifically for object types."""
 
-    def __init__(self, **data):
-        """Initialize with object type."""
-        super().__init__(**data)
-        self.type_value = SchemaType.OBJECT
+    type: SchemaType = SchemaType.OBJECT
 
 
 class StringSchema(Schema):
     """Schema specifically for string types."""
 
-    def __init__(self, **data):
-        """Initialize with string type."""
-        super().__init__(**data)
-        self.type_value = SchemaType.STRING
-
-
-# Format annotation
-class FormatAnnotation(pydantic.BaseModel):
-    """Format annotation for string instances."""
-
-    format: FormatType | str
+    type: SchemaType = SchemaType.STRING
 
 
 # Content schema
-class ContentSchema(pydantic.BaseModel):
+class ContentSchema(BaseModel):
     """Content schema for string instances."""
 
     content_media_type: str = pydantic.Field(alias='contentMediaType')
@@ -333,185 +251,159 @@ class ContentSchema(pydantic.BaseModel):
     )
     content_schema: Schema | None = pydantic.Field(None, alias='contentSchema')
 
-    model_config = {'populate_by_name': True}
+
+# Reference
+class Reference(BaseModel):
+    """JSON Schema reference."""
+
+    ref: str = pydantic.Field(alias='$ref')
+
+
+# Format annotation
+class FormatAnnotation(BaseModel):
+    """Format annotation for string instances."""
+
+    format: FormatType | str
 
 
 # Specialized string schemas with predefined formats
 class EmailSchema(StringSchema):
     """Schema for email strings."""
 
-    def __init__(self, **data):
-        """Initialize with email format."""
-        super().__init__(**data)
-        self.format = FormatType.EMAIL
+    format: FormatType = FormatType.EMAIL
 
 
 class IdnEmailSchema(StringSchema):
     """Schema for internationalized email strings."""
 
-    def __init__(self, **data):
-        """Initialize with idn-email format."""
-        super().__init__(**data)
-        self.format = FormatType.IDN_EMAIL
+    format: FormatType = FormatType.IDN_EMAIL
 
 
 class HostnameSchema(StringSchema):
     """Schema for hostname strings."""
 
-    def __init__(self, **data):
-        """Initialize with hostname format."""
-        super().__init__(**data)
-        self.format = FormatType.HOSTNAME
+    format: FormatType = FormatType.HOSTNAME
 
 
 class IdnHostnameSchema(StringSchema):
     """Schema for internationalized hostname strings."""
 
-    def __init__(self, **data):
-        """Initialize with idn-hostname format."""
-        super().__init__(**data)
-        self.format = FormatType.IDN_HOSTNAME
+    format: FormatType = FormatType.IDN_HOSTNAME
 
 
 class IPv4Schema(StringSchema):
     """Schema for IPv4 address strings."""
 
-    def __init__(self, **data):
-        """Initialize with ipv4 format."""
-        super().__init__(**data)
-        self.format = FormatType.IPV4
+    format: FormatType = FormatType.IPV4
 
 
 class IPv6Schema(StringSchema):
     """Schema for IPv6 address strings."""
 
-    def __init__(self, **data):
-        """Initialize with ipv6 format."""
-        super().__init__(**data)
-        self.format = FormatType.IPV6
+    format: FormatType = FormatType.IPV6
 
 
 class URISchema(StringSchema):
     """Schema for URI strings."""
 
-    def __init__(self, **data):
-        """Initialize with uri format."""
-        super().__init__(**data)
-        self.format = FormatType.URI
+    format: FormatType = FormatType.URI
 
 
 class URIReferenceSchema(StringSchema):
     """Schema for URI reference strings."""
 
-    def __init__(self, **data):
-        """Initialize with uri-reference format."""
-        super().__init__(**data)
-        self.format = FormatType.URI_REFERENCE
+    format: FormatType = FormatType.URI_REFERENCE
 
 
 class IRISchema(StringSchema):
     """Schema for IRI strings."""
 
-    def __init__(self, **data):
-        """Initialize with iri format."""
-        super().__init__(**data)
-        self.format = FormatType.IRI
+    format: FormatType = FormatType.IRI
 
 
 class IRIReferenceSchema(StringSchema):
     """Schema for IRI reference strings."""
 
-    def __init__(self, **data):
-        """Initialize with iri-reference format."""
-        super().__init__(**data)
-        self.format = FormatType.IRI_REFERENCE
+    format: FormatType = FormatType.IRI_REFERENCE
 
 
 class UuidSchema(StringSchema):
     """Schema for UUID strings."""
 
-    def __init__(self, **data):
-        """Initialize with uuid format."""
-        super().__init__(**data)
-        self.format = FormatType.UUID
+    format: FormatType = FormatType.UUID
 
 
 class URITemplateSchema(StringSchema):
     """Schema for URI template strings."""
 
-    def __init__(self, **data):
-        """Initialize with uri-template format."""
-        super().__init__(**data)
-        self.format = FormatType.URI_TEMPLATE
+    format: FormatType = FormatType.URI_TEMPLATE
 
 
 class JsonPointerSchema(StringSchema):
     """Schema for JSON pointer strings."""
 
-    def __init__(self, **data):
-        """Initialize with json-pointer format."""
-        super().__init__(**data)
-        self.format = FormatType.JSON_POINTER
+    format: FormatType = FormatType.JSON_POINTER
 
 
 class RelativeJsonPointerSchema(StringSchema):
     """Schema for relative JSON pointer strings."""
 
-    def __init__(self, **data):
-        """Initialize with relative-json-pointer format."""
-        super().__init__(**data)
-        self.format = FormatType.RELATIVE_JSON_POINTER
+    format: FormatType = FormatType.RELATIVE_JSON_POINTER
 
 
 class RegexSchema(StringSchema):
     """Schema for regular expression strings."""
 
-    def __init__(self, **data):
-        """Initialize with regex format."""
-        super().__init__(**data)
-        self.format = FormatType.REGEX
+    format: FormatType = FormatType.REGEX
 
 
 class DateTimeSchema(StringSchema):
     """Schema for date-time strings."""
 
-    def __init__(self, **data):
-        """Initialize with date-time format."""
-        super().__init__(**data)
-        self.format = FormatType.DATE_TIME
+    format: FormatType = FormatType.DATE_TIME
 
 
 class DateSchema(StringSchema):
     """Schema for date strings."""
 
-    def __init__(self, **data):
-        """Initialize with date format."""
-        super().__init__(**data)
-        self.format = FormatType.DATE
+    format: FormatType = FormatType.DATE
 
 
 class TimeSchema(StringSchema):
     """Schema for time strings."""
 
-    def __init__(self, **data):
-        """Initialize with time format."""
-        super().__init__(**data)
-        self.format = FormatType.TIME
+    dformat: FormatType = FormatType.TIME
 
 
 class DurationSchema(StringSchema):
     """Schema for duration strings."""
 
-    def __init__(self, **data):
-        """Initialize with duration format."""
-        super().__init__(**data)
-        self.format = FormatType.DURATION
+    format: FormatType = FormatType.DURATION
 
 
-# Reference handling
-class Reference(pydantic.BaseModel):
-    """JSON Schema reference."""
+def _coerce_type(value: typing.Any) -> SchemaType:
+    """Convert a specific Python type to a JSON Schema type."""
+    if value is str:
+        value = SchemaType.STRING
+    elif value is int:
+        value = SchemaType.INTEGER
+    elif value is float:
+        value = SchemaType.NUMBER
+    elif value is bool:
+        value = SchemaType.BOOLEAN
+    elif value in (list, tuple):
+        value = SchemaType.ARRAY
+    elif value is dict:
+        value = SchemaType.OBJECT
+    elif value is type(None):
+        value = SchemaType.NULL
+    return value
 
-    ref: str = pydantic.Field(alias='$ref')
 
-    model_config = {'populate_by_name': True}
+def coerce_type(value: typing.Any) -> SchemaType | list[SchemaType]:
+    """Translate Python types to JSON Schema types."""
+    if isinstance(value, list):
+        return [_coerce_type(item) for item in value]
+    if not isinstance(value, SchemaType):
+        return _coerce_type(value)
+    return value

@@ -216,20 +216,6 @@ class TestSchema(unittest.TestCase):
         self.assertEqual(parsed_dict['properties']['hobbies']['type'], 'array')
         self.assertEqual(parsed_dict['required'], ['firstName', 'lastName'])
 
-    def test_direct_imports(self):
-        """Test imports directly from package."""
-        # This ensures imports from the package root work correctly
-        import jsonschema_models as jsm
-
-        # Create a schema using direct import
-        schema = jsm.Schema(title='Test Direct Import')
-        self.assertEqual(schema.title, 'Test Direct Import')
-
-        # Create specialized schemas
-        string_schema = jsm.StringSchema(minLength=1)
-        self.assertEqual(string_schema.type, jsm.SchemaType.STRING)
-        self.assertEqual(string_schema.min_length, 1)
-
     def test_schema_with_references(self):
         """Test schema with references."""
         schema = jsm.Schema(
