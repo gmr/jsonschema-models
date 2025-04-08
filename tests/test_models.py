@@ -312,3 +312,92 @@ class TestSchema(unittest.TestCase):
 
         self.assertEqual(schema.items.type, jsm.SchemaType.STRING)
         self.assertEqual(schema.additional_items.type, jsm.SchemaType.NUMBER)
+
+    def test_format_types(self):
+        """Test format types."""
+        # Test format types with Schema
+        schema = jsm.Schema(
+            type=jsm.SchemaType.STRING, format=jsm.FormatType.EMAIL
+        )
+        self.assertEqual(schema.format, jsm.FormatType.EMAIL)
+
+        # Test with string value for format
+        schema = jsm.Schema(type=jsm.SchemaType.STRING, format='email')
+        self.assertEqual(schema.format, 'email')
+
+        # Test serialization of format
+        schema_dict = schema.model_dump(by_alias=True)
+        self.assertEqual(schema_dict['format'], 'email')
+
+    def test_specialized_format_schemas(self):
+        """Test specialized schema classes for formats."""
+        # Test email schema
+        email_schema = jsm.EmailSchema(minLength=5, maxLength=100)
+        self.assertEqual(email_schema.type, jsm.SchemaType.STRING)
+        self.assertEqual(email_schema.format, jsm.FormatType.EMAIL)
+        self.assertEqual(email_schema.min_length, 5)
+        self.assertEqual(email_schema.max_length, 100)
+
+        # Test date-time schema
+        datetime_schema = jsm.DateTimeSchema(description='A date-time field')
+        self.assertEqual(datetime_schema.type, jsm.SchemaType.STRING)
+        self.assertEqual(datetime_schema.format, jsm.FormatType.DATE_TIME)
+        self.assertEqual(datetime_schema.description, 'A date-time field')
+
+        # Test URI schema
+        uri_schema = jsm.URISchema(pattern='^https://')
+        self.assertEqual(uri_schema.type, jsm.SchemaType.STRING)
+        self.assertEqual(uri_schema.format, jsm.FormatType.URI)
+        self.assertEqual(uri_schema.pattern, '^https://')
+
+        # Test IPv4 schema
+        ipv4_schema = jsm.IPv4Schema()
+        self.assertEqual(ipv4_schema.type, jsm.SchemaType.STRING)
+        self.assertEqual(ipv4_schema.format, jsm.FormatType.IPV4)
+
+        # Test serialization
+        email_dict = email_schema.model_dump(by_alias=True)
+        self.assertEqual(email_dict['format'], 'email')
+        self.assertEqual(email_dict['type'], 'string')
+        self.assertEqual(email_dict['minLength'], 5)
+
+    def test_format_in_complex_schema(self):
+        """Test using formats in a complex schema."""
+        schema = jsm.Schema(
+            title='User',
+            type=jsm.SchemaType.OBJECT,
+            properties={
+                'id': jsm.UuidSchema(),
+                'email': jsm.EmailSchema(minLength=5),
+                'website': jsm.URISchema(),
+                'created_at': jsm.DateTimeSchema(),
+                'hostname': jsm.HostnameSchema(),
+                'ip_address': jsm.Schema(
+                    type=jsm.SchemaType.STRING,
+                    oneOf=[
+                        jsm.Schema(format=jsm.FormatType.IPV4),
+                        jsm.Schema(format=jsm.FormatType.IPV6),
+                    ],
+                ),
+            },
+            required=['id', 'email'],
+        )
+
+        self.assertEqual(schema.properties['id'].format, jsm.FormatType.UUID)
+        self.assertEqual(
+            schema.properties['email'].format, jsm.FormatType.EMAIL
+        )
+        self.assertEqual(
+            schema.properties['website'].format, jsm.FormatType.URI
+        )
+        self.assertEqual(
+            schema.properties['created_at'].format, jsm.FormatType.DATE_TIME
+        )
+        self.assertEqual(
+            schema.properties['hostname'].format, jsm.FormatType.HOSTNAME
+        )
+
+        # Test serialization
+        schema_dict = schema.model_dump(by_alias=True)
+        self.assertEqual(schema_dict['properties']['id']['format'], 'uuid')
+        self.assertEqual(schema_dict['properties']['email']['format'], 'email')

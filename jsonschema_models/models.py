@@ -20,6 +20,45 @@ class SchemaType(str, enum.Enum):
     STRING = 'string'
 
 
+class FormatType(str, enum.Enum):
+    """JSON Schema format enumeration for string validation."""
+
+    # Date and time formats (RFC 3339)
+    DATE_TIME = 'date-time'
+    DATE = 'date'
+    TIME = 'time'
+    DURATION = 'duration'
+
+    # Email formats
+    EMAIL = 'email'
+    IDN_EMAIL = 'idn-email'
+
+    # Hostname formats
+    HOSTNAME = 'hostname'
+    IDN_HOSTNAME = 'idn-hostname'
+
+    # IP address formats
+    IPV4 = 'ipv4'
+    IPV6 = 'ipv6'
+
+    # Resource identifier formats
+    URI = 'uri'
+    URI_REFERENCE = 'uri-reference'
+    IRI = 'iri'
+    IRI_REFERENCE = 'iri-reference'
+    UUID = 'uuid'
+
+    # URI template
+    URI_TEMPLATE = 'uri-template'
+
+    # JSON pointer formats
+    JSON_POINTER = 'json-pointer'
+    RELATIVE_JSON_POINTER = 'relative-json-pointer'
+
+    # Regular expression
+    REGEX = 'regex'
+
+
 class Schema(pydantic.BaseModel):
     """JSON Schema Draft 2020-12 schema object."""
 
@@ -61,7 +100,7 @@ class Schema(pydantic.BaseModel):
     max_length: int | None = pydantic.Field(None, alias='maxLength', ge=0)
     min_length: int | None = pydantic.Field(None, alias='minLength', ge=0)
     pattern: str | None = None
-    format: str | None = None
+    format: FormatType | str | None = None
 
     # Validation keywords for arrays
     # In draft 2020-12, items only accepts a single schema
@@ -291,7 +330,7 @@ class StringSchema(Schema):
 class FormatAnnotation(pydantic.BaseModel):
     """Format annotation for string instances."""
 
-    format: str
+    format: FormatType | str
 
 
 # Content schema
@@ -305,6 +344,178 @@ class ContentSchema(pydantic.BaseModel):
     content_schema: Schema | None = pydantic.Field(None, alias='contentSchema')
 
     model_config = {'populate_by_name': True}
+
+
+# Specialized string schemas with predefined formats
+class EmailSchema(StringSchema):
+    """Schema for email strings."""
+
+    def __init__(self, **data):
+        """Initialize with email format."""
+        super().__init__(**data)
+        self.format = FormatType.EMAIL
+
+
+class IdnEmailSchema(StringSchema):
+    """Schema for internationalized email strings."""
+
+    def __init__(self, **data):
+        """Initialize with idn-email format."""
+        super().__init__(**data)
+        self.format = FormatType.IDN_EMAIL
+
+
+class HostnameSchema(StringSchema):
+    """Schema for hostname strings."""
+
+    def __init__(self, **data):
+        """Initialize with hostname format."""
+        super().__init__(**data)
+        self.format = FormatType.HOSTNAME
+
+
+class IdnHostnameSchema(StringSchema):
+    """Schema for internationalized hostname strings."""
+
+    def __init__(self, **data):
+        """Initialize with idn-hostname format."""
+        super().__init__(**data)
+        self.format = FormatType.IDN_HOSTNAME
+
+
+class IPv4Schema(StringSchema):
+    """Schema for IPv4 address strings."""
+
+    def __init__(self, **data):
+        """Initialize with ipv4 format."""
+        super().__init__(**data)
+        self.format = FormatType.IPV4
+
+
+class IPv6Schema(StringSchema):
+    """Schema for IPv6 address strings."""
+
+    def __init__(self, **data):
+        """Initialize with ipv6 format."""
+        super().__init__(**data)
+        self.format = FormatType.IPV6
+
+
+class URISchema(StringSchema):
+    """Schema for URI strings."""
+
+    def __init__(self, **data):
+        """Initialize with uri format."""
+        super().__init__(**data)
+        self.format = FormatType.URI
+
+
+class URIReferenceSchema(StringSchema):
+    """Schema for URI reference strings."""
+
+    def __init__(self, **data):
+        """Initialize with uri-reference format."""
+        super().__init__(**data)
+        self.format = FormatType.URI_REFERENCE
+
+
+class IRISchema(StringSchema):
+    """Schema for IRI strings."""
+
+    def __init__(self, **data):
+        """Initialize with iri format."""
+        super().__init__(**data)
+        self.format = FormatType.IRI
+
+
+class IRIReferenceSchema(StringSchema):
+    """Schema for IRI reference strings."""
+
+    def __init__(self, **data):
+        """Initialize with iri-reference format."""
+        super().__init__(**data)
+        self.format = FormatType.IRI_REFERENCE
+
+
+class UuidSchema(StringSchema):
+    """Schema for UUID strings."""
+
+    def __init__(self, **data):
+        """Initialize with uuid format."""
+        super().__init__(**data)
+        self.format = FormatType.UUID
+
+
+class URITemplateSchema(StringSchema):
+    """Schema for URI template strings."""
+
+    def __init__(self, **data):
+        """Initialize with uri-template format."""
+        super().__init__(**data)
+        self.format = FormatType.URI_TEMPLATE
+
+
+class JsonPointerSchema(StringSchema):
+    """Schema for JSON pointer strings."""
+
+    def __init__(self, **data):
+        """Initialize with json-pointer format."""
+        super().__init__(**data)
+        self.format = FormatType.JSON_POINTER
+
+
+class RelativeJsonPointerSchema(StringSchema):
+    """Schema for relative JSON pointer strings."""
+
+    def __init__(self, **data):
+        """Initialize with relative-json-pointer format."""
+        super().__init__(**data)
+        self.format = FormatType.RELATIVE_JSON_POINTER
+
+
+class RegexSchema(StringSchema):
+    """Schema for regular expression strings."""
+
+    def __init__(self, **data):
+        """Initialize with regex format."""
+        super().__init__(**data)
+        self.format = FormatType.REGEX
+
+
+class DateTimeSchema(StringSchema):
+    """Schema for date-time strings."""
+
+    def __init__(self, **data):
+        """Initialize with date-time format."""
+        super().__init__(**data)
+        self.format = FormatType.DATE_TIME
+
+
+class DateSchema(StringSchema):
+    """Schema for date strings."""
+
+    def __init__(self, **data):
+        """Initialize with date format."""
+        super().__init__(**data)
+        self.format = FormatType.DATE
+
+
+class TimeSchema(StringSchema):
+    """Schema for time strings."""
+
+    def __init__(self, **data):
+        """Initialize with time format."""
+        super().__init__(**data)
+        self.format = FormatType.TIME
+
+
+class DurationSchema(StringSchema):
+    """Schema for duration strings."""
+
+    def __init__(self, **data):
+        """Initialize with duration format."""
+        super().__init__(**data)
+        self.format = FormatType.DURATION
 
 
 # Reference handling
