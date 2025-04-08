@@ -23,39 +23,24 @@ class SchemaType(str, enum.Enum):
 class FormatType(str, enum.Enum):
     """JSON Schema format enumeration for string validation."""
 
-    # Date and time formats (RFC 3339)
     DATE_TIME = 'date-time'
     DATE = 'date'
     TIME = 'time'
     DURATION = 'duration'
-
-    # Email formats
     EMAIL = 'email'
     IDN_EMAIL = 'idn-email'
-
-    # Hostname formats
     HOSTNAME = 'hostname'
     IDN_HOSTNAME = 'idn-hostname'
-
-    # IP address formats
     IPV4 = 'ipv4'
     IPV6 = 'ipv6'
-
-    # Resource identifier formats
     URI = 'uri'
     URI_REFERENCE = 'uri-reference'
     IRI = 'iri'
     IRI_REFERENCE = 'iri-reference'
     UUID = 'uuid'
-
-    # URI template
     URI_TEMPLATE = 'uri-template'
-
-    # JSON pointer formats
     JSON_POINTER = 'json-pointer'
     RELATIVE_JSON_POINTER = 'relative-json-pointer'
-
-    # Regular expression
     REGEX = 'regex'
 
 
@@ -181,11 +166,9 @@ class Schema(pydantic.BaseModel):
     )
 
     # Additional properties for extensibility
-    extra: dict[str, typing.Any] = pydantic.Field(default_factory=dict)
+    extra: dict[str, typing.Any] | None = None
 
     model_config = {'extra': 'allow', 'populate_by_name': True}
-
-    # Validators are now handled by the Field constraints (ge=0, gt=0, etc.)
 
     @pydantic.model_validator(mode='after')
     def validate_contains_constraints(self) -> Schema:
