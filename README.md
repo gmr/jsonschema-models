@@ -20,7 +20,7 @@ Pydantic models for representing JSON Schema objects.
   - JSON pointers (json-pointer, relative-json-pointer)
   - Regular expressions (regex)
 
-_*Note*: Currently this library does not enforce the many validation expectations that the 2020-12 specification calls for, it only allows you to implement the shape of the data._
+_**Note**: Currently this library does not enforce the many validation expectations that the 2020-12 specification calls for, it only allows you to implement the shape of the data._
 
 ## Installation
 
