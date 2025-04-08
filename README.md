@@ -20,7 +20,7 @@ Pydantic models for representing JSON Schema objects.
   - JSON pointers (json-pointer, relative-json-pointer)
   - Regular expressions (regex)
 
-_Note: Currently this library does not enforce the many validation expectations that the 2020-12 specification calls for, it only allows you to implement the shape of the data._
+_*Note*: Currently this library does not enforce the many validation expectations that the 2020-12 specification calls for, it only allows you to implement the shape of the data._
 
 ## Installation
 
@@ -47,7 +47,7 @@ schema = jsm.Schema(
 )
 
 # Convert to JSON Schema
-json_schema = schema.model_dump(by_alias=True)
+json_schema = schema.model_dump()
 ```
 
 ### Using Specialized Schema Classes
@@ -104,7 +104,7 @@ contact_schema = jsm.Schema(
 )
 
 # Convert to JSON Schema
-json_schema = user_schema.model_dump(by_alias=True)
+json_schema = user_schema.model_dump()
 ```
 
 ### Working with References
