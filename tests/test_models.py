@@ -200,7 +200,7 @@ class TestSchema(unittest.TestCase):
         )
 
         # Convert to dict and then to JSON
-        schema_dict = schema.model_dump(by_alias=True)
+        schema_dict = schema.model_dump()
         schema_json = json.dumps(schema_dict)
 
         # Parse the JSON back to a dict
@@ -312,7 +312,7 @@ class TestSchema(unittest.TestCase):
         self.assertEqual(schema.format, 'email')
 
         # Test serialization of format
-        schema_dict = schema.model_dump(by_alias=True)
+        schema_dict = schema.model_dump()
         self.assertEqual(schema_dict['format'], 'email')
 
     def test_specialized_format_schemas(self):
@@ -342,7 +342,7 @@ class TestSchema(unittest.TestCase):
         self.assertEqual(ipv4_schema.format, jsm.FormatType.IPV4)
 
         # Test serialization
-        email_dict = email_schema.model_dump(by_alias=True)
+        email_dict = email_schema.model_dump()
         self.assertEqual(email_dict['format'], 'email')
         self.assertEqual(email_dict['type'], 'string')
         self.assertEqual(email_dict['minLength'], 5)
@@ -353,7 +353,7 @@ class TestSchema(unittest.TestCase):
             title='User',
             type=jsm.SchemaType.OBJECT,
             properties={
-                'id': jsm.UuidSchema(),
+                'id': jsm.UUIDSchema(),
                 'email': jsm.EmailSchema(minLength=5),
                 'website': jsm.URISchema(),
                 'created_at': jsm.DateTimeSchema(),
@@ -384,7 +384,7 @@ class TestSchema(unittest.TestCase):
         )
 
         # Test serialization
-        schema_dict = schema.model_dump(by_alias=True)
+        schema_dict = schema.model_dump()
         self.assertEqual(schema_dict['properties']['id']['format'], 'uuid')
         self.assertEqual(schema_dict['properties']['email']['format'], 'email')
 

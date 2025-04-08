@@ -18,7 +18,6 @@ class BaseModel(pydantic.BaseModel):
     def _set_dump_kwargs(kwargs: dict) -> None:
         kwargs['by_alias'] = True
         kwargs['exclude_none'] = True
-        kwargs['exclude_unset'] = True
 
     def model_dump(self, **kwargs) -> dict:
         """Override model_dump to ensure aliases are used."""
@@ -337,7 +336,7 @@ class IRIReferenceSchema(StringSchema):
     format: FormatType = FormatType.IRI_REFERENCE
 
 
-class UuidSchema(StringSchema):
+class UUIDSchema(StringSchema):
     """Schema for UUID strings."""
 
     format: FormatType = FormatType.UUID

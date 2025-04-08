@@ -34,7 +34,7 @@ from jsonschema_models.models import (
     URIReferenceSchema,
     URISchema,
     URITemplateSchema,
-    UuidSchema,
+    UUIDSchema,
 )
 
 __all__ = [
@@ -69,7 +69,7 @@ __all__ = [
     'URIReferenceSchema',
     'URISchema',
     'URITemplateSchema',
-    'UuidSchema',
+    'UUIDSchema',
     'version',
 ]
 
