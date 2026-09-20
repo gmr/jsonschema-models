@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import builtins
 import enum
 import logging
 import typing
 
-import pydantic
+import pydantic.alias_generators
 
 LOGGER = logging.getLogger(__name__)
 
@@ -22,6 +23,15 @@ class BaseModel(pydantic.BaseModel):
         'use_enum_values': True,
         'validate_assignment': True,
         'validate_by_alias': True,
+        'alias_generator': pydantic.AliasGenerator(
+            validation_alias=lambda field_name: pydantic.AliasChoices(
+                pydantic.alias_generators.to_snake(field_name),
+                pydantic.alias_generators.to_camel(field_name),
+            ),
+            serialization_alias=lambda field_name: pydantic.alias_generators.to_camel(
+                field_name
+            ),
+        ),
     }
 
     @staticmethod
@@ -52,6 +62,11 @@ class SchemaType(str, enum.Enum):
     STRING = 'string'
 
 
+SchemaTypes = (
+    SchemaType | list[SchemaType] | builtins.type | list[builtins.type]
+)
+
+
 class FormatType(str, enum.Enum):
     """JSON Schema format enumeration for string validation."""
 
@@ -79,121 +94,113 @@ class FormatType(str, enum.Enum):
 class Schema(BaseModel):
     """JSON Schema Draft 2020-12 schema object."""
 
-    schema_: str | None = pydantic.Field(None, alias='$schema')
-    id_: str | None = pydantic.Field(None, alias='$id')
-    title: str | None = None
-    description: str | None = None
-    default: typing.Any | None = None
-    deprecated: bool | None = None
-    read_only: bool | None = pydantic.Field(None, alias='readOnly')
-    write_only: bool | None = pydantic.Field(None, alias='writeOnly')
-    examples: list[typing.Any] | None = None
-    comment: str | None = pydantic.Field(None, alias='$comment')
+    schema_: str | None = pydantic.Field(
+        default=None, alias='schema', serialization_alias='$schema'
+    )
+    id_: str | None = pydantic.Field(
+        default=None, alias='id', serialization_alias='$id'
+    )
+    title: str | None = pydantic.Field(default=None)
+    description: str | None = pydantic.Field(default=None)
+    default: typing.Any | None = pydantic.Field(default=None)
+    deprecated: bool | None = pydantic.Field(default=None)
+    read_only: bool | None = pydantic.Field(default=None)
+    write_only: bool | None = pydantic.Field(default=None)
+    examples: list[typing.Any] | None = pydantic.Field(default=None)
+    comment: str | None = pydantic.Field(
+        default=None, serialization_alias='$comment'
+    )
 
     # Type constraints
-    type: SchemaType | list[SchemaType] | None = None
-    enum: list[typing.Any] | None = None
-    const: typing.Any | None = None
+    type: SchemaTypes | None = pydantic.Field(default=None)
+    enum: list[typing.Any] | None = pydantic.Field(default=None)
+    const: typing.Any | None = pydantic.Field(default=None)
 
     # Validation keywords for numeric instances
     multiple_of: float | None = pydantic.Field(
-        None, alias='multipleOf', gt=0, description='Must be greater than 0'
+        default=None, gt=0, description='Must be greater than 0'
     )
-    maximum: float | None = None
-    exclusive_maximum: float | None = pydantic.Field(
-        None, alias='exclusiveMaximum'
-    )
-    minimum: float | None = None
-    exclusive_minimum: float | None = pydantic.Field(
-        None, alias='exclusiveMinimum'
-    )
+    maximum: float | None = pydantic.Field(default=None)
+    exclusive_maximum: float | None = pydantic.Field(default=None)
+    minimum: float | None = pydantic.Field(default=None)
+    exclusive_minimum: float | None = pydantic.Field(default=None)
 
     # Validation keywords for strings
-    max_length: int | None = pydantic.Field(None, alias='maxLength', ge=0)
-    min_length: int | None = pydantic.Field(None, alias='minLength', ge=0)
-    pattern: str | None = None
-    format: FormatType | str | None = None
+    max_length: int | None = pydantic.Field(default=None, ge=0)
+    min_length: int | None = pydantic.Field(default=None, ge=0)
+    pattern: str | None = pydantic.Field(default=None)
+    format: FormatType | str | None = pydantic.Field(default=None)
 
     # Validation keywords for arrays
     # In draft 2020-12, items only accepts a single schema
-    items: Schema | None = None
+    items: Schema | None = pydantic.Field(default=None)
     # additionalItems is deprecated in draft 2020-12, kept for backwards
     # compatibility
     additional_items: bool | Schema | None = pydantic.Field(
-        None, alias='additionalItems', deprecated=True
+        default=None, deprecated=True
     )
-    max_items: int | None = pydantic.Field(None, alias='maxItems', ge=0)
-    min_items: int | None = pydantic.Field(None, alias='minItems', ge=0)
-    unique_items: bool | None = pydantic.Field(None, alias='uniqueItems')
-    contains: Schema | None = None
-    min_contains: int | None = pydantic.Field(None, alias='minContains', ge=1)
-    max_contains: int | None = pydantic.Field(None, alias='maxContains', ge=1)
+    max_items: int | None = pydantic.Field(default=None, ge=0)
+    min_items: int | None = pydantic.Field(default=None, ge=0)
+    unique_items: bool | None = pydantic.Field(default=None)
+    contains: Schema | None = pydantic.Field(default=None)
+    min_contains: int | None = pydantic.Field(default=None, ge=1)
+    max_contains: int | None = pydantic.Field(default=None, ge=1)
 
     # Validation keywords for objects
-    max_properties: int | None = pydantic.Field(
-        None, alias='maxProperties', ge=0
-    )
-    min_properties: int | None = pydantic.Field(
-        None, alias='minProperties', ge=0
-    )
-    required: list[str] | None = None
-    properties: dict[str, Schema] | None = None
-    pattern_properties: dict[str, Schema] | None = pydantic.Field(
-        None, alias='patternProperties'
-    )
-    additional_properties: bool | Schema | None = pydantic.Field(
-        None, alias='additionalProperties'
-    )
-    property_names: Schema | None = pydantic.Field(None, alias='propertyNames')
+    max_properties: int | None = pydantic.Field(default=None, ge=0)
+    min_properties: int | None = pydantic.Field(default=None, ge=0)
+    required: list[str] | None = pydantic.Field(default=None)
+    properties: dict[str, Schema] | None = pydantic.Field(default=None)
+    pattern_properties: dict[str, Schema] | None = pydantic.Field(default=None)
+    additional_properties: bool | Schema | None = pydantic.Field(default=None)
+    property_names: Schema | None = pydantic.Field(default=None)
 
     # Unevaluated instance keywords
-    unevaluated_items: bool | Schema | None = pydantic.Field(
-        None, alias='unevaluatedItems'
-    )
-    unevaluated_properties: bool | Schema | None = pydantic.Field(
-        None, alias='unevaluatedProperties'
-    )
+    unevaluated_items: bool | Schema | None = pydantic.Field(default=None)
+    unevaluated_properties: bool | Schema | None = pydantic.Field(default=None)
 
     # Logical keywords
-    all_of: list[Schema] | None = pydantic.Field(None, alias='allOf')
-    any_of: list[Schema] | None = pydantic.Field(None, alias='anyOf')
-    one_of: list[Schema] | None = pydantic.Field(None, alias='oneOf')
-    not_: Schema | None = pydantic.Field(None, alias='not')
-    if_: Schema | None = pydantic.Field(None, alias='if')
-    then: Schema | None = None
-    else_: Schema | None = pydantic.Field(None, alias='else')
+    all_of: list[Schema] | None = pydantic.Field(default=None)
+    any_of: list[Schema] | None = pydantic.Field(default=None)
+    one_of: list[Schema] | None = pydantic.Field(default=None)
+    not_: Schema | None = pydantic.Field(default=None, alias='not')
+    if_: Schema | None = pydantic.Field(default=None, alias='if')
+    then: Schema | None = pydantic.Field(default=None)
+    else_: Schema | None = pydantic.Field(default=None, alias='else')
 
     # Conditional application keywords
     dependent_required: dict[str, list[str]] | None = pydantic.Field(
-        None, alias='dependentRequired'
+        default=None
     )
-    dependent_schemas: dict[str, Schema] | None = pydantic.Field(
-        None, alias='dependentSchemas'
-    )
+    dependent_schemas: dict[str, Schema] | None = pydantic.Field(default=None)
 
     # Reference keywords
-    ref: str | None = pydantic.Field(None, alias='$ref')
-    defs: dict[str, Schema] | None = pydantic.Field(None, alias='$defs')
+    ref: str | None = pydantic.Field(default=None, serialization_alias='$ref')
+    defs: dict[str, Schema] | None = pydantic.Field(
+        default=None, serialization_alias='$defs'
+    )
 
     # Content keywords
-    content_media_type: str | None = pydantic.Field(
-        None, alias='contentMediaType'
-    )
-    content_encoding: str | None = pydantic.Field(
-        None, alias='contentEncoding'
-    )
-    content_schema: Schema | None = pydantic.Field(None, alias='contentSchema')
+    content_media_type: str | None = pydantic.Field(default=None)
+    content_encoding: str | None = pydantic.Field(default=None)
+    content_schema: Schema | None = pydantic.Field(default=None)
 
     # Vocabulary-specific keywords
-    anchor: str | None = pydantic.Field(None, alias='$anchor')
-    dynamic_anchor: str | None = pydantic.Field(None, alias='$dynamicAnchor')
-    dynamic_ref: str | None = pydantic.Field(None, alias='$dynamicRef')
+    anchor: str | None = pydantic.Field(
+        default=None, serialization_alias='$anchor'
+    )
+    dynamic_anchor: str | None = pydantic.Field(
+        default=None, serialization_alias='$dynamicAnchor'
+    )
+    dynamic_ref: str | None = pydantic.Field(
+        default=None, serialization_alias='$dynamicRef'
+    )
     vocabulary: dict[str, bool] | None = pydantic.Field(
-        None, alias='$vocabulary'
+        default=None, serialization_alias='$vocabulary'
     )
 
     # Additional properties for extensibility
-    extra: dict[str, typing.Any] | None = None
+    extra: dict[str, typing.Any] | None = pydantic.Field(default=None)
 
     @pydantic.field_validator('type', mode='before')
     @classmethod
@@ -262,18 +269,16 @@ class StringSchema(Schema):
 class ContentSchema(BaseModel):
     """Content schema for string instances."""
 
-    content_media_type: str = pydantic.Field(alias='contentMediaType')
-    content_encoding: str | None = pydantic.Field(
-        None, alias='contentEncoding'
-    )
-    content_schema: Schema | None = pydantic.Field(None, alias='contentSchema')
+    content_media_type: str
+    content_encoding: str | None = pydantic.Field(None)
+    content_schema: Schema | None = pydantic.Field(default=None)
 
 
 # Reference
 class Reference(BaseModel):
     """JSON Schema reference."""
 
-    ref: str = pydantic.Field(alias='$ref')
+    ref: str
 
 
 # Format annotation
