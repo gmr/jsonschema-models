@@ -318,7 +318,7 @@ class TestSchema(unittest.TestCase):
     def test_specialized_format_schemas(self):
         """Test specialized schema classes for formats."""
         # Test email schema
-        email_schema = jsm.EmailSchema(minLength=5, maxLength=100)
+        email_schema = jsm.EmailSchema(min_length=5, maxLength=100)
         self.assertEqual(email_schema.type, jsm.SchemaType.STRING)
         self.assertEqual(email_schema.format, jsm.FormatType.EMAIL)
         self.assertEqual(email_schema.min_length, 5)
@@ -354,13 +354,13 @@ class TestSchema(unittest.TestCase):
             type=jsm.SchemaType.OBJECT,
             properties={
                 'id': jsm.UUIDSchema(),
-                'email': jsm.EmailSchema(minLength=5),
+                'email': jsm.EmailSchema(min_length=5),
                 'website': jsm.URISchema(),
                 'created_at': jsm.DateTimeSchema(),
                 'hostname': jsm.HostnameSchema(),
                 'ip_address': jsm.Schema(
                     type=jsm.SchemaType.STRING,
-                    oneOf=[
+                    one_of=[
                         jsm.Schema(format=jsm.FormatType.IPV4),
                         jsm.Schema(format=jsm.FormatType.IPV6),
                     ],
@@ -393,8 +393,8 @@ class TestSchema(unittest.TestCase):
         schema = jsm.Schema(
             title='TestAlias',
             type=jsm.SchemaType.STRING,
-            schema_='https://json-schema.org/draft/2020-12/schema',
-            id_='https://example.com/schemas/string',
+            schema='https://json-schema.org/draft/2020-12/schema',
+            id='https://example.com/schemas/string',
         )
 
         # Call model_dump without explicitly setting by_alias
