@@ -411,3 +411,11 @@ class TestSchema(unittest.TestCase):
         )
         # Ensure type_value is not present (it should be aliased to 'type')
         self.assertNotIn('type_value', schema_dict)
+
+    def test_field_defaults(self):
+        """Test that every Schema field defaults to None."""
+        for name, field in jsm.Schema.model_fields.items():
+            self.assertIsNone(field.default, name)
+        self.assertEqual(jsm.Schema().model_dump(), {})
+        self.assertEqual(jsm.ArraySchema().type, 'array')
+        self.assertEqual(jsm.EmailSchema().format, 'email')
