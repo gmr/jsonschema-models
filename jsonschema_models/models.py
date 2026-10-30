@@ -28,9 +28,7 @@ class BaseModel(pydantic.BaseModel):
                 pydantic.alias_generators.to_snake(field_name),
                 pydantic.alias_generators.to_camel(field_name),
             ),
-            serialization_alias=lambda field_name: pydantic.alias_generators.to_camel(
-                field_name
-            ),
+            serialization_alias=pydantic.alias_generators.to_camel,
         ),
     }
 
@@ -50,7 +48,7 @@ class BaseModel(pydantic.BaseModel):
         return super().model_dump_json(**kwargs)
 
 
-class SchemaType(str, enum.Enum):
+class SchemaType(enum.StrEnum):
     """JSON Schema type enumeration."""
 
     ARRAY = 'array'
@@ -67,7 +65,7 @@ SchemaTypes = (
 )
 
 
-class FormatType(str, enum.Enum):
+class FormatType(enum.StrEnum):
     """JSON Schema format enumeration for string validation."""
 
     DATE_TIME = 'date-time'
@@ -394,7 +392,7 @@ class DateSchema(StringSchema):
 class TimeSchema(StringSchema):
     """Schema for time strings."""
 
-    dformat: FormatType = FormatType.TIME
+    format: FormatType = FormatType.TIME
 
 
 class DurationSchema(StringSchema):
