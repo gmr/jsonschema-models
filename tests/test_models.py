@@ -416,3 +416,47 @@ class TestSchema(unittest.TestCase):
         )
         # Ensure type_value is not present (it should be aliased to 'type')
         self.assertNotIn('type_value', schema_dict)
+
+    def test_dollar_keywords_round_trip(self):
+        """Test that $ keywords load into their fields and dump back."""
+        document = {
+            '$schema': 'https://json-schema.org/draft/2020-12/schema',
+            '$id': 'https://example.com/schemas/root',
+            '$comment': 'A comment',
+            '$anchor': 'root',
+            '$dynamicAnchor': 'node',
+            '$vocabulary': {'https://example.com/vocab': True},
+            '$defs': {'name': {'type': 'string'}},
+            'properties': {
+                'name': {'$ref': '#/$defs/name'},
+                'child': {'$dynamicRef': '#node'},
+            },
+        }
+        schema = jsm.Schema.model_validate(document)
+        self.assertEqual(schema.schema_, document['$schema'])
+        self.assertEqual(schema.id_, document['$id'])
+        self.assertEqual(schema.comment, 'A comment')
+        self.assertEqual(schema.anchor, 'root')
+        self.assertEqual(schema.dynamic_anchor, 'node')
+        self.assertEqual(schema.vocabulary, document['$vocabulary'])
+        self.assertEqual(schema.defs['name'].type, jsm.SchemaType.STRING)
+        self.assertEqual(schema.properties['name'].ref, '#/$defs/name')
+        self.assertEqual(schema.properties['child'].dynamic_ref, '#node')
+        self.assertEqual(schema.model_extra, {})
+        self.assertEqual(schema.model_dump(), document)
+
+    def test_dollar_keywords_by_name(self):
+        """Test that $ keywords also load without the $."""
+        schema = jsm.Schema(schema='s', id='i', dynamicRef='#a')
+        self.assertEqual(
+            schema.model_dump(),
+            {'$schema': 's', '$id': 'i', '$dynamicRef': '#a'},
+        )
+        schema = jsm.Schema(schema_='s', id_='i', dynamic_ref='#a')
+        self.assertEqual(schema.model_dump()['$dynamicRef'], '#a')
+
+    def test_reference(self):
+        """Test that Reference loads and dumps $ref."""
+        reference = jsm.Reference.model_validate({'$ref': '#/$defs/a'})
+        self.assertEqual(reference.ref, '#/$defs/a')
+        self.assertEqual(reference.model_dump(), {'$ref': '#/$defs/a'})
