@@ -48,6 +48,23 @@ class BaseModel(pydantic.BaseModel):
         return super().model_dump_json(**kwargs)
 
 
+def _keyword(name: str, **kwargs: typing.Any) -> typing.Any:
+    """Return a field for a ``$`` keyword, for example ``$ref``.
+
+    The field loads from the keyword, and from the keyword without the
+    ``$`` in camel or snake case. It dumps as the keyword.
+
+    """
+    bare = name.removeprefix('$')
+    return pydantic.Field(
+        validation_alias=pydantic.AliasChoices(
+            name, bare, pydantic.alias_generators.to_snake(bare)
+        ),
+        serialization_alias=name,
+        **kwargs,
+    )
+
+
 class SchemaType(enum.StrEnum):
     """JSON Schema type enumeration."""
 
@@ -92,12 +109,8 @@ class FormatType(enum.StrEnum):
 class Schema(BaseModel):
     """JSON Schema Draft 2020-12 schema object."""
 
-    schema_: str | None = pydantic.Field(
-        default=None, alias='schema', serialization_alias='$schema'
-    )
-    id_: str | None = pydantic.Field(
-        default=None, alias='id', serialization_alias='$id'
-    )
+    schema_: str | None = _keyword('$schema', default=None)
+    id_: str | None = _keyword('$id', default=None)
     title: str | None = pydantic.Field(default=None)
     description: str | None = pydantic.Field(default=None)
     default: typing.Any | None = pydantic.Field(default=None)
@@ -105,9 +118,7 @@ class Schema(BaseModel):
     read_only: bool | None = pydantic.Field(default=None)
     write_only: bool | None = pydantic.Field(default=None)
     examples: list[typing.Any] | None = pydantic.Field(default=None)
-    comment: str | None = pydantic.Field(
-        default=None, serialization_alias='$comment'
-    )
+    comment: str | None = _keyword('$comment', default=None)
 
     # Type constraints
     type: SchemaTypes | None = pydantic.Field(default=None)
@@ -173,10 +184,8 @@ class Schema(BaseModel):
     dependent_schemas: dict[str, Schema] | None = pydantic.Field(default=None)
 
     # Reference keywords
-    ref: str | None = pydantic.Field(default=None, serialization_alias='$ref')
-    defs: dict[str, Schema] | None = pydantic.Field(
-        default=None, serialization_alias='$defs'
-    )
+    ref: str | None = _keyword('$ref', default=None)
+    defs: dict[str, Schema] | None = _keyword('$defs', default=None)
 
     # Content keywords
     content_media_type: str | None = pydantic.Field(default=None)
@@ -184,18 +193,10 @@ class Schema(BaseModel):
     content_schema: Schema | None = pydantic.Field(default=None)
 
     # Vocabulary-specific keywords
-    anchor: str | None = pydantic.Field(
-        default=None, serialization_alias='$anchor'
-    )
-    dynamic_anchor: str | None = pydantic.Field(
-        default=None, serialization_alias='$dynamicAnchor'
-    )
-    dynamic_ref: str | None = pydantic.Field(
-        default=None, serialization_alias='$dynamicRef'
-    )
-    vocabulary: dict[str, bool] | None = pydantic.Field(
-        default=None, serialization_alias='$vocabulary'
-    )
+    anchor: str | None = _keyword('$anchor', default=None)
+    dynamic_anchor: str | None = _keyword('$dynamicAnchor', default=None)
+    dynamic_ref: str | None = _keyword('$dynamicRef', default=None)
+    vocabulary: dict[str, bool] | None = _keyword('$vocabulary', default=None)
 
     # Additional properties for extensibility
     extra: dict[str, typing.Any] | None = pydantic.Field(default=None)
@@ -276,7 +277,7 @@ class ContentSchema(BaseModel):
 class Reference(BaseModel):
     """JSON Schema reference."""
 
-    ref: str
+    ref: str = _keyword('$ref')
 
 
 # Format annotation
