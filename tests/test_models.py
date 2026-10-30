@@ -341,6 +341,11 @@ class TestSchema(unittest.TestCase):
         self.assertEqual(ipv4_schema.type, jsm.SchemaType.STRING)
         self.assertEqual(ipv4_schema.format, jsm.FormatType.IPV4)
 
+        # Test time schema
+        time_schema = jsm.TimeSchema()
+        self.assertEqual(time_schema.format, jsm.FormatType.TIME)
+        self.assertEqual(time_schema.model_dump()['format'], 'time')
+
         # Test serialization
         email_dict = email_schema.model_dump()
         self.assertEqual(email_dict['format'], 'email')
